@@ -23,7 +23,7 @@ public class LoginService {
 		LoginVO vo = new LoginVO();
 		vo.setAToken(jwtUtil.createAccessToken(user.getId(), ""));
 		vo.setRToken(jwtUtil.createRefreshToken(user.getId(), ""));
-		vo.setUserName("홍길동");
+		vo.setUserName("홍길동asd");
 		
 		return vo;
 	}
