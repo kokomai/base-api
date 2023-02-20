@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -19,12 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @Slf4j
 public class JwtCheckFilter extends OncePerRequestFilter {
-	
-	private String prefix = "/api";
-	private String[] tokenIgnorePaths = {
-			"/login/login",
-			"/test/*"
-	};
+	@Value("${props.uri-prefix}")
+	private String prefix;
+	@Value("${props.ignore-path}")
+	private String[] tokenIgnorePaths;
 	
 	@Autowired
 	private JwtUtil jwtUtil;
@@ -46,6 +45,7 @@ public class JwtCheckFilter extends OncePerRequestFilter {
 					token = jwtUtil.createAccessToken(id, "");
 					
 					response.setHeader("X-AUTH-ATOKEN", token);
+					filterChain.doFilter(request, response);
 				} else {
 					// when aToken is expired
 					
@@ -65,6 +65,7 @@ public class JwtCheckFilter extends OncePerRequestFilter {
 							token = jwtUtil.createAccessToken(id, "");
 							
 							response.setHeader("X-AUTH-ATOKEN", token);
+							filterChain.doFilter(request, response);
 						} else {
 							// rToken is expired
 							response.sendError(401);
@@ -76,24 +77,26 @@ public class JwtCheckFilter extends OncePerRequestFilter {
 				}
 				
 			} else {
-				log.debug("there's no token");
+				log.info("there's no token");
 				response.sendError(401);
 			}
 		} else {
-			log.debug("Ignore Path Contained..");
+			log.info("Ignore Path Contained..");
+			filterChain.doFilter(request, response);
 		}
-		
-		filterChain.doFilter(request, response);
 	}
 	
 	private boolean isIgnoreUri(String uri) {
 		String path = uri.replace(prefix, "");
 		
 		for(String ignorePath : tokenIgnorePaths) {
+			log.info("replaced :::: " + ignorePath.replace("/*", ""));
 			if(ignorePath.equals(path)) {
 				return true;
 			} else {
+				log.info("path ::::: " + path);
 				if(path.contains(ignorePath.replace("/*", ""))) {
+					log.info("is astrisk matched :::: " + true);
 					return true;
 				}
 			}
