@@ -1,5 +1,10 @@
 package com.foresys.api.user.controller;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,4 +40,21 @@ public class UserController {
 		log.debug("user : {}", user);
 		return userService.GetError(user);
 	}
+	
+	@PostMapping("/getData")
+	public List<Map<String, Object>> GetRandom() throws Exception{
+		Map<String, Object> map;
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+		for(int i = 0; i < 10; i++) {
+			double dValue = Math.random();
+			int iValue = (int)(dValue * 10);
+			map = new HashMap<String, Object>();
+			map.put("key", iValue);
+			
+			list.add(map);
+		}
+		
+		return list;
+	}
+	
 }

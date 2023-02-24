@@ -68,10 +68,12 @@ public class JwtCheckFilter extends OncePerRequestFilter {
 							filterChain.doFilter(request, response);
 						} else {
 							// rToken is expired
+							log.info("rToken is expired..");
 							response.sendError(401);
 						}
 					} else {
 						// rToken is not correct
+						log.info("rToken is invalid");
 						response.sendError(401);
 					}
 				}
@@ -90,13 +92,10 @@ public class JwtCheckFilter extends OncePerRequestFilter {
 		String path = uri.replace(prefix, "");
 		
 		for(String ignorePath : tokenIgnorePaths) {
-			log.info("replaced :::: " + ignorePath.replace("/*", ""));
 			if(ignorePath.equals(path)) {
 				return true;
 			} else {
-				log.info("path ::::: " + path);
 				if(path.contains(ignorePath.replace("/*", ""))) {
-					log.info("is astrisk matched :::: " + true);
 					return true;
 				}
 			}

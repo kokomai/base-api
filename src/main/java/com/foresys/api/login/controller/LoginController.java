@@ -21,7 +21,7 @@ public class LoginController {
 	
 	@PostMapping("/login")
 	public LoginVO Login(@RequestBody User user) throws Exception{
-		log.debug("controller entered");
+		log.info("controller entered");
 		return loginService.Login(user);
 	}
 	

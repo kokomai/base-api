@@ -4,6 +4,7 @@ import java.util.Date;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
@@ -13,12 +14,11 @@ import io.jsonwebtoken.SignatureAlgorithm;
 
 @Component
 public class JwtUtil {
-//	private final long atokenValidMilisecond = 1000L * 60 * 20; // 20분
-//	private final long rtokenValidMilisecond = 1000L * 60 * 60; // 60분
-	
-	private final long atokenValidMilisecond = 1000L * 1; // 1초
-	private final long rtokenValidMilisecond = 1000L * 5; // 5초
-	
+	@Value("${props.aTokenTime}")
+	private long atokenValidMilisecond;
+	@Value("${props.rTokenTime}")
+	private long rtokenValidMilisecond;
+		
 	// secert key 
 	private static final String SECRET_KEY = "asdfqwerforesyszxcv0901";
 	

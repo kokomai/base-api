@@ -13,5 +13,9 @@ props:
     "favicon.ico", 
     test/*, 
     api-docs/*, 
-    swagger-ui/*
+    swagger-ui/*,
+    user/*
   uri-prefix: "/api/"
+  aTokenTime: 60000 # 1분
+  rTokenTime: 1800000 # 30분
+#1000L * 60 * 60; // 60분
