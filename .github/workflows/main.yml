@@ -1,0 +1,83 @@
+name: Deploy vacation-api to ECS
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-northeast-2 # 해당 cluster가 있는 지역명
+      ECS_CLUSTER_NAME: test-cluster # 배포하고자 하는 cluster 명
+      ECR_REPOSITORY_NAME: test-api # ECR repository 이름
+      ECS_CONTAINER_NAME: test # ecs -> 태스크정의 내의 컨테이너 이름
+      ECS_SERVICE_NAME: test-service # ecs에서 사용하는 서비스명
+      TASK_DEFINITION_NAME: test-api # ecs -> 태스크 정의 명
+      # Github actions 자동배포 과정에서 사용할 환경변수들
+      # AWS ECS 콘솔에서 이름이 모두 일치하는지 확인이 필요하다.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials For Devzone
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          # Github Repository Secrets에 값 등록 필요!
+          aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install JDK 11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: 11
+          cache: 'maven' # https://github.com/actions/setup-java#caching-packages-dependencies
+
+      - name: build maven
+        run: mvn -f ./pom.xml package -Dmaven.test.skip
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          SERVICE_TAG: . # Dockerfile의 경로
+          IMAGE_TAG: ${{ github.sha }} # Github가 제공하는 SHA 암호화 사용
+        run: |
+          # Build a docker container and
+          # push it to ECR so that it can
+          # be deployed to ECS.
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG $SERVICE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG
+          # 여기에서 사용한 output(name = image)을 아래에서 사용
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY_NAME:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Download Task Definition Template
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.TASK_DEFINITION_NAME }} \
+            --query taskDefinition \
+            > task-definition.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.ECS_CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }} # 위에서 선언한 "image" output을 사용
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
